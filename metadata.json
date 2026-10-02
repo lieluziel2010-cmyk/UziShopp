@@ -1,0 +1,6 @@
+{
+  "name": "UziShop - שוק היד שנייה לנוער",
+  "description": "UziShop - פלטפורמת מרקטפלייס ייעודית לבני נוער לפתיחת חנויות אישיות ומכירת פריטים שאינם בשימוש",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
