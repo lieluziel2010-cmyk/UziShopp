@@ -53,7 +53,7 @@ export const ProfileView: React.FC = () => {
         </p>
         <button
           onClick={() => openAuthModal('register')}
-          className="py-3 px-6 bg-gradient-to-r from-pink-500 via-purple-500 to-sky-500 hover:opacity-95 text-white rounded-full text-xs font-bold shadow-md shadow-purple-500/25 transition-all active:scale-98 cursor-pointer"
+          className="py-3 px-6 bg-purple-600 hover:bg-purple-700 text-white rounded-full text-xs font-bold shadow-md shadow-purple-600/20 transition-all active:scale-98 cursor-pointer"
         >
           {t.profile.openShopBtn}
         </button>
@@ -227,7 +227,7 @@ export const ProfileView: React.FC = () => {
 
               <button
                 onClick={() => openChatWithSeller(profileUser.id)}
-                className="px-4 py-2 bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 rounded-full text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                className="px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-full text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-sky-500/20 active:scale-98 transition-all cursor-pointer"
               >
                 <MessageSquare className="w-3.5 h-3.5" />
                 <span>{t.profile.sendMessageBtn}</span>
@@ -245,15 +245,15 @@ export const ProfileView: React.FC = () => {
 
               <button
                 onClick={() => openCheckoutModal('shop_feature')}
-                className="px-3.5 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-full text-xs font-bold flex items-center justify-center gap-1.5 border border-purple-200 shadow-2xs transition-all active:scale-98 whitespace-nowrap cursor-pointer"
+                className="px-3.5 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-full text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-pink-500/20 active:scale-98 transition-all whitespace-nowrap cursor-pointer"
               >
-                <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                <Sparkles className="w-3.5 h-3.5" />
                 <span>{t.featuredShop.promoteShopBtn}</span>
               </button>
 
               <button
                 onClick={() => openAddItemModal()}
-                className="px-4 py-2 bg-gradient-to-r from-pink-500 via-purple-500 to-sky-500 hover:opacity-95 text-white rounded-full text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-purple-500/25 transition-all active:scale-98 whitespace-nowrap cursor-pointer"
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-full text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-purple-600/20 transition-all active:scale-98 whitespace-nowrap cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>{t.profile.addItemBtn}</span>
@@ -287,7 +287,7 @@ export const ProfileView: React.FC = () => {
             </div>
             <button
               onClick={() => openCheckoutModal('vip_upgrade')}
-              className="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-full text-xs font-bold shrink-0 transition-colors shadow-xs cursor-pointer"
+              className="px-3.5 py-1.5 bg-sky-500 hover:bg-sky-600 text-white rounded-full text-xs font-bold shrink-0 transition-all shadow-sm shadow-sky-500/20 active:scale-98 cursor-pointer"
             >
               {t.profile.upgradeNow}
             </button>
@@ -386,7 +386,7 @@ export const ProfileView: React.FC = () => {
           {isOwner && activeTabFilter === 'available' && (
             <button
               onClick={() => openAddItemModal()}
-              className="mt-2 py-2 px-5 bg-gradient-to-r from-pink-500 via-purple-500 to-sky-500 hover:opacity-95 text-white rounded-full text-xs font-bold transition-all shadow-xs cursor-pointer"
+              className="mt-2 py-2 px-5 bg-purple-600 hover:bg-purple-700 text-white rounded-full text-xs font-bold transition-all shadow-xs cursor-pointer"
             >
               {t.profile.uploadFirstItemBtn}
             </button>

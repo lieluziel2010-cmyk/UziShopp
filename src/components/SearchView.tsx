@@ -42,7 +42,7 @@ export const SearchView: React.FC = () => {
 
   const getCategoryPastelClass = (cat: Category | 'הכל', isSelected: boolean) => {
     if (isSelected) {
-      return 'bg-gradient-to-r from-pink-500 via-purple-500 to-sky-500 text-white shadow-xs border-transparent font-bold';
+      return 'bg-purple-600 text-white shadow-xs border-transparent font-bold';
     }
 
     switch (cat) {

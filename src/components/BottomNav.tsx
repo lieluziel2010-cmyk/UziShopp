@@ -132,7 +132,7 @@ export const BottomNav: React.FC = () => {
                 <div key={item.id} className="relative -top-4">
                   <button
                     onClick={() => setActiveTab('add')}
-                    className="w-14 h-14 rounded-full bg-gradient-to-tr from-pink-500 via-purple-500 to-sky-400 hover:opacity-95 active:scale-95 shadow-lg shadow-purple-500/25 transition-all flex items-center justify-center text-white cursor-pointer"
+                    className="w-14 h-14 rounded-full bg-purple-600 hover:bg-purple-700 active:scale-95 shadow-lg shadow-purple-600/30 transition-all flex items-center justify-center text-white cursor-pointer"
                     aria-label={t.nav.add}
                   >
                     <Plus className="w-6 h-6 stroke-[2.5]" />

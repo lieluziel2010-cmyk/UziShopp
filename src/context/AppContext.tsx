@@ -108,7 +108,6 @@ interface AppContextType {
   registerWithEmail: (email: string, pass: string, username: string, shopName: string, bio: string, avatar: string) => Promise<{ success: boolean; error?: string }>;
   loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   loginWithApple: () => Promise<{ success: boolean; error?: string }>;
-  loginDirectWithGoogleEmail: (email?: string, name?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   updateProfile: (updates: { shopName?: string; username?: string; bio?: string; avatar?: string }) => Promise<{ success: boolean; error?: string }>;
   isEditProfileModalOpen: boolean;
@@ -1072,7 +1071,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       } else if (err.code === 'auth/operation-not-allowed') {
         errorMsg = 'ספק ההתחברות של Google אינו פעיל עדיין במסוף Firebase (Authentication > Sign-in method)';
       } else if (err.message?.includes('CONFIGURATION_NOT_FOUND') || err.code === 'auth/configuration-not-found') {
-        errorMsg = 'התחברות Google דורשת הגדרת ספק Google במסוף Firebase Console (סטטוס: CONFIGURATION_NOT_FOUND). השתמש בכפתור החיבור המהיר למטה!';
+        errorMsg = 'יש להפעיל את ספק Google במסוף Firebase Console (Authentication > Sign-in method)';
       }
       showToast(errorMsg, 'error');
       return { success: false, error: errorMsg };
@@ -1120,48 +1119,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
       showToast(errorMsg, 'error');
       return { success: false, error: errorMsg };
-    }
-  };
-
-  // Direct 1-Click Connection with User's Google Account (Instant & 100% Reliable)
-  const loginDirectWithGoogleEmail = async (email: string = 'lieluziel2010@gmail.com', name?: string): Promise<{ success: boolean; error?: string }> => {
-    try {
-      const cleanEmail = email.trim().toLowerCase();
-      const baseName = name?.trim() || cleanEmail.split('@')[0];
-      const uid = `user_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
-
-      // Check if user profile already exists in state
-      const existing = users.find(u => u.email.toLowerCase() === cleanEmail);
-      if (existing) {
-        setCurrentUser(existing);
-      } else {
-        const newProfile: UserProfile = {
-          id: uid,
-          email: cleanEmail,
-          username: baseName.toLowerCase().replace(/\s+/g, '_'),
-          shopName: `החנות של ${baseName}`,
-          bio: 'שלום! מוזמנים לבקר בחנות שלי ב-UziShop ✨',
-          avatar: '',
-          followersCount: 0,
-          following: [],
-          isVip: false,
-          createdAt: new Date().toISOString(),
-        };
-
-        try {
-          await setDoc(doc(db, 'users', uid), newProfile);
-        } catch {}
-
-        setCurrentUser(newProfile);
-        setUsers(prev => [newProfile, ...prev.filter(u => u.id !== uid)]);
-      }
-
-      closeAuthModal();
-      showToast(`מחובר בהצלחה עם חשבון Google (${cleanEmail})! 👋`, 'success');
-      return { success: true };
-    } catch (e: any) {
-      showToast('שגיאה בחיבור לחשבון', 'error');
-      return { success: false, error: e.message };
     }
   };
 
@@ -1310,7 +1267,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         registerWithEmail,
         loginWithGoogle,
         loginWithApple,
-        loginDirectWithGoogleEmail,
         logout,
         updateProfile,
         isEditProfileModalOpen,

@@ -173,7 +173,7 @@ export const AddItemModal: React.FC = () => {
                   closeAddItemModal();
                   openCheckoutModal('vip_upgrade');
                 }}
-                className="w-full py-3 bg-gradient-to-r from-pink-500 via-purple-500 to-sky-500 text-white rounded-full text-xs font-bold shadow-md shadow-purple-500/25 cursor-pointer"
+                className="w-full py-3 bg-sky-500 hover:bg-sky-600 text-white rounded-full text-xs font-bold shadow-md shadow-sky-500/20 cursor-pointer transition-colors"
               >
                 {t.addModal.upgradeNowBtn}
               </button>
@@ -374,7 +374,7 @@ export const AddItemModal: React.FC = () => {
               <button
                 type="submit"
                 disabled={isUploading}
-                className="w-full py-3.5 bg-gradient-to-r from-pink-500 via-purple-500 to-sky-500 hover:opacity-95 text-white font-bold rounded-full text-sm shadow-md shadow-purple-500/25 active:scale-98 transition-all disabled:opacity-50 cursor-pointer"
+                className="w-full py-3.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-full text-sm shadow-md shadow-purple-600/20 active:scale-98 transition-all disabled:opacity-50 cursor-pointer"
               >
                 {itemToEdit ? t.addModal.submitSave : t.addModal.submitPublish}
               </button>

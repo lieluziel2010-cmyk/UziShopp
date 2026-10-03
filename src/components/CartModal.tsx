@@ -84,7 +84,7 @@ export const CartModal: React.FC = () => {
                 </p>
                 <button
                   onClick={closeCart}
-                  className="mt-2 px-5 py-2 rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-sky-500 text-white font-bold text-xs shadow-md shadow-purple-500/20 active:scale-95 transition-all"
+                  className="mt-2 px-5 py-2 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-600/20 active:scale-95 transition-all cursor-pointer"
                 >
                   לגילוי פריטים בפיד
                 </button>
@@ -182,7 +182,7 @@ export const CartModal: React.FC = () => {
               {/* Proceed Button */}
               <button
                 onClick={handleProceedToCheckout}
-                className="w-full py-3.5 px-4 rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-sky-500 text-white font-bold text-sm shadow-md shadow-purple-500/25 hover:opacity-95 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3.5 px-4 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm shadow-md shadow-purple-600/20 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>המשך לתשלום מאובטח</span>
                 <ArrowIcon className="w-4 h-4" />

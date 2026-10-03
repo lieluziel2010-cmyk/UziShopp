@@ -48,7 +48,7 @@ export const FeedView: React.FC = () => {
   // Harmonious palette: pink, lavender/purple, sky blue, and white (NO green, NO yellow)
   const getCategoryPastelClass = (cat: Category | 'הכל', isSelected: boolean) => {
     if (isSelected) {
-      return 'bg-gradient-to-r from-pink-500 via-purple-500 to-sky-500 text-white shadow-xs border-transparent font-bold';
+      return 'bg-purple-600 text-white shadow-xs border-transparent font-bold';
     }
 
     switch (cat) {
@@ -183,7 +183,7 @@ export const FeedView: React.FC = () => {
             ) : currentUser ? (
               <button
                 onClick={() => openAddItemModal()}
-                className="w-full py-3 bg-gradient-to-r from-pink-500 via-purple-500 to-sky-500 text-white rounded-full text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-purple-500/20 transition-all active:scale-98 cursor-pointer"
+                className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-full text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-purple-600/20 transition-all active:scale-98 cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>{t.feed.uploadFirstItem}</span>
@@ -191,7 +191,7 @@ export const FeedView: React.FC = () => {
             ) : (
               <button
                 onClick={() => openAuthModal('register')}
-                className="w-full py-3 bg-gradient-to-r from-pink-500 via-purple-500 to-sky-500 text-white rounded-full text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-purple-500/20 transition-all active:scale-98 cursor-pointer"
+                className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-full text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-purple-600/20 transition-all active:scale-98 cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>{t.feed.registerAndSell}</span>

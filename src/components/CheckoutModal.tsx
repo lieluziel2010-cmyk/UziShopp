@@ -161,27 +161,27 @@ export const CheckoutModal: React.FC = () => {
                   <span className="text-xs font-bold">Bit (ביט)</span>
                 </button>
 
-                {/* PayBox */}
+                {/* PayBox - Solid Sky Blue (תכלת) */}
                 <button
                   type="button"
                   onClick={() => setSelectedMethod('paybox')}
                   className={`p-2.5 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
                     selectedMethod === 'paybox'
-                      ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
-                      : 'bg-white border-purple-100/90 text-slate-700 hover:bg-purple-50/50'
+                      ? 'bg-sky-500 text-white border-sky-500 shadow-sm'
+                      : 'bg-white border-purple-100/90 text-slate-700 hover:bg-sky-50/50'
                   }`}
                 >
                   <Layers className="w-4 h-4" />
                   <span className="text-xs font-bold">PayBox</span>
                 </button>
 
-                {/* Apple / Google Pay */}
+                {/* Apple / Google Pay - Solid Lilac (לילך) */}
                 <button
                   type="button"
                   onClick={() => setSelectedMethod('apple_pay')}
                   className={`p-2.5 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
                     selectedMethod === 'apple_pay'
-                      ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
+                      ? 'bg-violet-600 text-white border-violet-600 shadow-sm'
                       : 'bg-white border-purple-100/90 text-slate-700 hover:bg-purple-50/50'
                   }`}
                 >
@@ -205,13 +205,14 @@ export const CheckoutModal: React.FC = () => {
                   <span className="text-xs font-bold">כרטיס אשראי</span>
                 </button>
 
+                {/* Cash - Solid Pink (ורדרד) */}
                 <button
                   type="button"
                   onClick={() => setSelectedMethod('cash')}
                   className={`p-2 rounded-xl border text-center transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                     selectedMethod === 'cash'
-                      ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
-                      : 'bg-white border-purple-100 text-slate-700 hover:bg-purple-50/50'
+                      ? 'bg-pink-500 text-white border-pink-500 shadow-sm'
+                      : 'bg-white border-purple-100 text-slate-700 hover:bg-pink-50/50'
                   }`}
                 >
                   <span className="text-xs font-bold">איסוף ומזומן</span>
@@ -351,7 +352,7 @@ export const CheckoutModal: React.FC = () => {
             <button
               type="submit"
               disabled={isProcessing}
-              className="w-full py-3.5 bg-gradient-to-r from-pink-500 via-purple-500 to-sky-500 hover:opacity-95 text-white font-bold rounded-full text-xs shadow-md shadow-purple-500/25 flex items-center justify-center gap-2 active:scale-98 transition-all disabled:opacity-50 cursor-pointer"
+              className="w-full py-3.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-full text-xs shadow-md shadow-purple-600/20 flex items-center justify-center gap-2 active:scale-98 transition-all disabled:opacity-50 cursor-pointer"
             >
               {isProcessing ? (
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

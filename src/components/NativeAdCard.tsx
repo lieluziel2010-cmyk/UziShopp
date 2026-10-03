@@ -48,7 +48,7 @@ const NATIVE_AD_CREATIVES = [
 export const NativeAdCard: React.FC<NativeAdCardProps> = ({ index }) => {
   const { dir, t, showToast } = useApp();
 
-  const clientId = (import.meta as any).env?.VITE_ADSENSE_CLIENT_ID || 'ca-pub-XXXXXXXXXXXXXXXX';
+  const clientId = (import.meta as any).env?.VITE_ADSENSE_CLIENT_ID || 'ca-pub-3323803410489439';
   const slotId = (import.meta as any).env?.VITE_ADSENSE_SLOT_ID || 'XXXXXXXXXX';
 
   const creative = NATIVE_AD_CREATIVES[Math.floor(index / 7) % NATIVE_AD_CREATIVES.length] || NATIVE_AD_CREATIVES[0];

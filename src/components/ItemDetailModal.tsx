@@ -242,7 +242,7 @@ export const ItemDetailModal: React.FC = () => {
               {!item.isFeatured && !isSold && (
                 <button
                   onClick={() => openCheckoutModal('promote', item)}
-                  className="w-full py-2.5 px-4 bg-gradient-to-r from-pink-500 via-purple-500 to-sky-500 text-white rounded-full text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                  className="w-full py-2.5 px-4 bg-pink-500 hover:bg-pink-600 text-white rounded-full text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>{t.itemDetail.promoteTopFeed}</span>
@@ -302,10 +302,10 @@ export const ItemDetailModal: React.FC = () => {
                   <MessageSquare className="w-5 h-5" />
                 </button>
 
-                {/* Add to Cart Button */}
+                {/* Add to Cart Button - Solid Sky Blue (תכלת) */}
                 <button
                   onClick={handleAddToCart}
-                  className="flex-1 py-3 px-3 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-bold rounded-full text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  className="flex-1 py-3 px-3 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-full text-xs flex items-center justify-center gap-1.5 shadow-md shadow-sky-500/20 active:scale-98 transition-all cursor-pointer"
                 >
                   <ShoppingCart className="w-4 h-4" />
                   <span>הוסף לסל</span>
@@ -314,7 +314,7 @@ export const ItemDetailModal: React.FC = () => {
                 {/* Buy Now with Bit / Apple Pay / Card */}
                 <button
                   onClick={handleBuyNow}
-                  className="flex-1 py-3 px-4 bg-gradient-to-r from-pink-500 via-purple-500 to-sky-500 hover:opacity-95 text-white font-bold rounded-full text-xs shadow-md shadow-purple-500/25 flex items-center justify-center gap-1.5 active:scale-98 transition-all cursor-pointer"
+                  className="flex-1 py-3 px-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-full text-xs shadow-md shadow-purple-600/20 flex items-center justify-center gap-1.5 active:scale-98 transition-all cursor-pointer"
                 >
                   <CreditCard className="w-4 h-4" />
                   <span>קנה עכשיו</span>

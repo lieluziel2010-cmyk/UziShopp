@@ -70,7 +70,7 @@ export const ChatView: React.FC = () => {
         </p>
         <button
           onClick={() => openAuthModal('login')}
-          className="py-3 px-6 bg-gradient-to-r from-pink-500 via-purple-500 to-sky-500 hover:opacity-95 text-white rounded-full text-xs font-bold shadow-md shadow-purple-500/25 transition-all active:scale-98 cursor-pointer"
+          className="py-3 px-6 bg-purple-600 hover:bg-purple-700 text-white rounded-full text-xs font-bold shadow-md shadow-purple-600/20 transition-all active:scale-98 cursor-pointer"
         >
           {t.chat.loginBtn}
         </button>
@@ -228,7 +228,7 @@ export const ChatView: React.FC = () => {
             <button
               type="submit"
               disabled={!inputMessage.trim()}
-              className="w-10 h-10 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 hover:opacity-90 text-white flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0 shadow-2xs cursor-pointer"
+              className="w-10 h-10 rounded-full bg-sky-500 hover:bg-sky-600 text-white flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0 shadow-md shadow-sky-500/20 active:scale-95 cursor-pointer"
               aria-label="שלח"
             >
               <Send className={`w-4 h-4 ${dir === 'rtl' ? '-scale-x-100' : ''}`} />

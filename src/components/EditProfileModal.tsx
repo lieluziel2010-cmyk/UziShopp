@@ -293,7 +293,7 @@ export const EditProfileModal: React.FC = () => {
             <button
               type="submit"
               disabled={isSaving || isUploading}
-              className="flex-1 py-3 bg-gradient-to-r from-pink-500 via-purple-500 to-sky-500 hover:opacity-95 text-white font-bold rounded-full text-xs shadow-md shadow-purple-500/25 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+              className="flex-1 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-full text-xs shadow-md shadow-purple-600/20 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>{isSaving ? 'שומר שינויים...' : 'שמור שינויים'}</span>

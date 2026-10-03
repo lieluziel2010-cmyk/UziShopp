@@ -70,7 +70,7 @@ export const AdBanner: React.FC<AdBannerProps> = ({ adIndex = 0 }) => {
   const envClientId = (import.meta as any).env?.VITE_ADSENSE_CLIENT_ID;
   const envSlotId = (import.meta as any).env?.VITE_ADSENSE_SLOT_ID;
   
-  const clientId = localStorage.getItem('uzishop_adsense_client') || envClientId || 'ca-pub-XXXXXXXXXXXXXXXX';
+  const clientId = localStorage.getItem('uzishop_adsense_client') || envClientId || 'ca-pub-3323803410489439';
   const slotId = localStorage.getItem('uzishop_adsense_slot') || envSlotId || 'XXXXXXXXXX';
 
   const creative = SAMPLE_FALLBACK_ADS[adIndex % SAMPLE_FALLBACK_ADS.length];
@@ -181,7 +181,7 @@ export const AdBanner: React.FC<AdBannerProps> = ({ adIndex = 0 }) => {
             </span>
             <button 
               type="button"
-              className="px-3 py-1.5 rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-sky-500 text-white text-[11px] font-bold flex items-center gap-1.5 shadow-2xs group-hover:opacity-95 transition-opacity"
+              className="px-3 py-1.5 rounded-full bg-sky-500 hover:bg-sky-600 text-white text-[11px] font-bold flex items-center gap-1.5 shadow-2xs transition-colors"
             >
               <span>{creative.ctaText}</span>
               <ExternalLink className="w-3 h-3" />

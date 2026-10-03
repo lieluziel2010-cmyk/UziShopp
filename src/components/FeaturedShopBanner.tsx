@@ -94,7 +94,7 @@ export const FeaturedShopBanner: React.FC = () => {
 
             <button
               onClick={() => navigateToShop(featuredShop.id)}
-              className="shrink-0 px-3.5 py-2 bg-gradient-to-r from-pink-500 via-purple-500 to-sky-500 hover:opacity-95 text-white rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm active:scale-98 transition-all cursor-pointer"
+              className="shrink-0 px-3.5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm active:scale-98 transition-all cursor-pointer"
             >
               <span>{t.featuredShop.visitShop}</span>
               <ArrowIcon className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -136,7 +136,7 @@ export const FeaturedShopBanner: React.FC = () => {
               openAuthModal('register');
             }
           }}
-          className="w-full sm:w-auto shrink-0 px-4 py-2.5 bg-gradient-to-r from-pink-500 via-purple-500 to-sky-500 hover:opacity-95 text-white rounded-full text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-98 transition-all cursor-pointer"
+          className="w-full sm:w-auto shrink-0 px-4 py-2.5 bg-pink-500 hover:bg-pink-600 text-white rounded-full text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-98 transition-all cursor-pointer"
         >
           <Sparkles className="w-3.5 h-3.5" />
           <span>{t.featuredShop.promoteShopBtn}</span>
