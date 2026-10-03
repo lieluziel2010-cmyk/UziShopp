@@ -8,9 +8,7 @@ import {
   Trash2, 
   CheckCircle, 
   ShieldCheck, 
-  Share2,
-  ShoppingCart,
-  CreditCard
+  Share2
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
@@ -28,7 +26,6 @@ export const ItemDetailModal: React.FC = () => {
     navigateToShop,
     toggleFollowUser,
     openCheckoutModal,
-    addToCart,
     dir,
     t
   } = useApp();
@@ -54,15 +51,6 @@ export const ItemDetailModal: React.FC = () => {
     if (window.confirm(t.itemDetail.confirmDelete)) {
       deleteItem(item.id);
     }
-  };
-
-  const handleAddToCart = () => {
-    addToCart(item);
-  };
-
-  const handleBuyNow = () => {
-    addToCart(item);
-    openCheckoutModal('cart_checkout');
   };
 
   return (
@@ -291,33 +279,28 @@ export const ItemDetailModal: React.FC = () => {
                 <span>{t.itemDetail.itemSoldCannotChat}</span>
               </button>
             ) : (
-              <div className="flex items-center gap-2">
-                {/* Chat Button */}
+              <div className="flex items-center gap-2.5">
+                {/* Heart / Favorite Button */}
+                <button
+                  onClick={() => toggleLikeItem(item.id)}
+                  className={`p-3 rounded-full transition-all cursor-pointer border ${
+                    isLiked 
+                      ? 'bg-pink-50 text-pink-600 border-pink-200' 
+                      : 'bg-slate-100 hover:bg-pink-50 text-slate-600 hover:text-pink-600 border-slate-200'
+                  }`}
+                  title={isLiked ? 'הסר מהמועדפים' : 'שמור במועדפים'}
+                  aria-label="שמור במועדפים"
+                >
+                  <Heart className={`w-5 h-5 ${isLiked ? 'fill-pink-500 text-pink-500' : ''}`} />
+                </button>
+
+                {/* Primary Action: Direct Chat with Seller for Purchase */}
                 <button
                   onClick={() => seller && openChatWithSeller(seller.id, item.id)}
-                  className="p-3 bg-slate-100 hover:bg-purple-50 text-slate-700 hover:text-purple-700 rounded-full transition-colors cursor-pointer border border-purple-100"
-                  title="שוחח עם המוכר"
-                  aria-label="שוחח עם המוכר"
+                  className="flex-1 py-3 px-5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-full text-xs shadow-md shadow-purple-600/20 flex items-center justify-center gap-2 active:scale-98 transition-all cursor-pointer"
                 >
-                  <MessageSquare className="w-5 h-5" />
-                </button>
-
-                {/* Add to Cart Button - Solid Sky Blue (תכלת) */}
-                <button
-                  onClick={handleAddToCart}
-                  className="flex-1 py-3 px-3 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-full text-xs flex items-center justify-center gap-1.5 shadow-md shadow-sky-500/20 active:scale-98 transition-all cursor-pointer"
-                >
-                  <ShoppingCart className="w-4 h-4" />
-                  <span>הוסף לסל</span>
-                </button>
-
-                {/* Buy Now with Bit / Apple Pay / Card */}
-                <button
-                  onClick={handleBuyNow}
-                  className="flex-1 py-3 px-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-full text-xs shadow-md shadow-purple-600/20 flex items-center justify-center gap-1.5 active:scale-98 transition-all cursor-pointer"
-                >
-                  <CreditCard className="w-4 h-4" />
-                  <span>קנה עכשיו</span>
+                  <MessageSquare className="w-4 h-4" />
+                  <span>שוחח עם המוכר לתיאום קנייה</span>
                 </button>
               </div>
             )}

@@ -15,7 +15,7 @@ import { ItemDetailModal } from './components/ItemDetailModal';
 import { AddItemModal } from './components/AddItemModal';
 import { AuthModal } from './components/AuthModal';
 import { CheckoutModal } from './components/CheckoutModal';
-import { CartModal } from './components/CartModal';
+import { FavoritesModal } from './components/FavoritesModal';
 import { EditProfileModal } from './components/EditProfileModal';
 import { ToastContainer } from './components/ToastContainer';
 
@@ -30,7 +30,7 @@ const MainLayout: React.FC = () => {
       {/* Toast Notifications (Floating at top) */}
       <ToastContainer />
 
-      {/* Top Application Header */}
+      {/* Top Application Header with Brand and Favorites Heart Button */}
       <Navbar />
 
       {/* Main Content Area - Mobile & Desktop Responsive */}
@@ -45,7 +45,7 @@ const MainLayout: React.FC = () => {
       <BottomNav />
 
       {/* Interactive Modals */}
-      <CartModal />
+      <FavoritesModal />
       <ItemDetailModal />
       <AddItemModal />
       <EditProfileModal />

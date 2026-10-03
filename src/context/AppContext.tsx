@@ -81,6 +81,12 @@ interface AppContextType {
   updateCartQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
 
+  // Favorites
+  isFavoritesOpen: boolean;
+  openFavorites: () => void;
+  closeFavorites: () => void;
+  favoriteItemsCount: number;
+
   // Toasts
   toasts: ToastMessage[];
   showToast: (text: string, type?: 'success' | 'error' | 'info') => void;
@@ -256,6 +262,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
   const openCart = () => setIsCartOpen(true);
   const closeCart = () => setIsCartOpen(false);
+
+  const [isFavoritesOpen, setIsFavoritesOpen] = useState<boolean>(false);
+  const openFavorites = () => setIsFavoritesOpen(true);
+  const closeFavorites = () => setIsFavoritesOpen(false);
 
   // Dedicated reactive persistence hooks guaranteeing zero data loss across reloads
   useEffect(() => {
@@ -1201,6 +1211,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const unreadMessagesCount = chats.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
   const featuredShop = users.find(u => u.isFeaturedShop && (!u.featuredShopExpiry || u.featuredShopExpiry > Date.now())) || null;
+  const favoriteItemsCount = items.filter(item => currentUser && (item.likes || []).includes(currentUser.id)).length;
 
   return (
     <AppContext.Provider
@@ -1227,6 +1238,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         language,
         dir,
         t,
+
+        // Favorites
+        isFavoritesOpen,
+        openFavorites,
+        closeFavorites,
+        favoriteItemsCount,
 
         // Cart
         cart,

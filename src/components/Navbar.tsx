@@ -10,7 +10,7 @@ import {
   LogOut, 
   ShieldCheck,
   Languages,
-  ShoppingCart
+  Heart
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { SUPPORTED_LANGUAGES } from '../i18n/translations';
@@ -24,11 +24,11 @@ export const Navbar: React.FC = () => {
     openAuthModal, 
     logout,
     navigateToHomeFeed,
+    openFavorites,
+    favoriteItemsCount,
     activeTab,
     language,
     setLanguage,
-    cartCount,
-    openCart,
     t
   } = useApp();
   
@@ -64,17 +64,18 @@ export const Navbar: React.FC = () => {
         {/* Right side controls */}
         <div className="relative flex items-center gap-2">
           
-          {/* Cart Button with badge count */}
+          {/* Favorites Heart Button */}
           <button
-            onClick={openCart}
-            className="relative h-8.5 px-2.5 rounded-full bg-purple-50/80 hover:bg-purple-100/80 text-purple-700 text-xs font-bold flex items-center gap-1.5 transition-colors border border-purple-200/70 cursor-pointer shadow-2xs"
-            aria-label="סל קניות"
+            onClick={openFavorites}
+            className="relative h-8.5 px-3 rounded-full bg-pink-50/80 hover:bg-pink-100/80 text-pink-700 text-xs font-bold flex items-center gap-1.5 transition-colors border border-pink-200/80 cursor-pointer shadow-2xs"
+            aria-label="המועדפים שלי"
+            title="המועדפים שלי"
           >
-            <ShoppingCart className="w-4 h-4 text-purple-600" />
-            <span className="hidden sm:inline">סל</span>
-            {cartCount > 0 && (
+            <Heart className={`w-4 h-4 ${favoriteItemsCount > 0 ? 'fill-pink-500 text-pink-500' : 'text-pink-600'}`} />
+            <span className="hidden sm:inline">מועדפים</span>
+            {favoriteItemsCount > 0 && (
               <span className="w-5 h-5 rounded-full bg-pink-500 text-white text-[10px] font-extrabold flex items-center justify-center shadow-xs -me-1">
-                {cartCount}
+                {favoriteItemsCount}
               </span>
             )}
           </button>
