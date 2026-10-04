@@ -115,7 +115,14 @@ interface AppContextType {
   loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   loginWithApple: () => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
-  updateProfile: (updates: { shopName?: string; username?: string; bio?: string; avatar?: string }) => Promise<{ success: boolean; error?: string }>;
+  updateProfile: (updates: { 
+    shopName?: string; 
+    username?: string; 
+    bio?: string; 
+    avatar?: string;
+    pendingAvatarPromise?: Promise<string> | null;
+  }) => Promise<{ success: boolean; error?: string }>;
+  isAvatarUploadingInBackground: boolean;
   isEditProfileModalOpen: boolean;
   openEditProfileModal: () => void;
   closeEditProfileModal: () => void;
@@ -1148,12 +1155,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     navigateToHomeFeed();
   };
 
+  const [isAvatarUploadingInBackground, setIsAvatarUploadingInBackground] = useState(false);
+
   // Edit and Update User Profile at Any Time
   const updateProfile = async (updates: { 
     shopName?: string; 
     username?: string; 
     bio?: string; 
     avatar?: string;
+    pendingAvatarPromise?: Promise<string> | null;
   }): Promise<{ success: boolean; error?: string }> => {
     if (!currentUser) {
       return { success: false, error: 'יש להתחבר כדי לערוך את הפרופיל' };
@@ -1163,6 +1173,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const cleanUsername = updates.username !== undefined 
         ? updates.username.replace(/^@/, '').trim() 
         : currentUser.username;
+
+      const previousAvatar = currentUser.avatar || '';
 
       const updatedUser: UserProfile = {
         ...currentUser,
@@ -1190,18 +1202,61 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return item;
       }));
 
+      // Immediate Firestore sync for text fields
       try {
-        await updateDoc(doc(db, 'users', currentUser.id), {
+        const firestoreFields: any = {
           shopName: updatedUser.shopName,
           username: updatedUser.username,
           bio: updatedUser.bio,
-          avatar: updatedUser.avatar,
-        });
+        };
+        // If not a pending background upload promise, update avatar right away
+        if (!updates.pendingAvatarPromise) {
+          firestoreFields.avatar = updatedUser.avatar;
+        }
+        await updateDoc(doc(db, 'users', currentUser.id), firestoreFields);
       } catch (e) {
         console.warn('Firestore update profile notice:', e);
       }
 
-      showToast('הפרופיל עודכן בהצלחה! ✨', 'success');
+      showToast('השינויים נשמרו בהצלחה! ✨', 'success');
+
+      // If an avatar upload is still progressing in background, handle it decoupled from modal!
+      if (updates.pendingAvatarPromise) {
+        setIsAvatarUploadingInBackground(true);
+        updates.pendingAvatarPromise
+          .then(async (uploadedUrl) => {
+            if (!uploadedUrl) return;
+            setCurrentUser(prev => prev ? { ...prev, avatar: uploadedUrl } : null);
+            setUsers(prev => prev.map(u => u.id === currentUser.id ? { ...u, avatar: uploadedUrl } : u));
+            if (selectedUserForProfile?.id === currentUser.id) {
+              setSelectedUserForProfile(prev => prev ? { ...prev, avatar: uploadedUrl } : null);
+            }
+            setItems(prev => prev.map(item => {
+              if (item.sellerId === currentUser.id) {
+                return { ...item, sellerAvatar: uploadedUrl };
+              }
+              return item;
+            }));
+
+            try {
+              await updateDoc(doc(db, 'users', currentUser.id), { avatar: uploadedUrl });
+            } catch (err) {
+              console.warn('Background avatar Firestore update notice:', err);
+            }
+            showToast('תמונת הפרופיל עודכנה בהצלחה! ✨', 'success');
+          })
+          .catch((err) => {
+            console.error('Background avatar upload failed:', err);
+            showToast('העלאת תמונת הפרופיל ברקע נכשלה', 'error');
+            // Revert avatar to previous
+            setCurrentUser(prev => prev ? { ...prev, avatar: previousAvatar } : null);
+            setUsers(prev => prev.map(u => u.id === currentUser.id ? { ...u, avatar: previousAvatar } : u));
+          })
+          .finally(() => {
+            setIsAvatarUploadingInBackground(false);
+          });
+      }
+
       return { success: true };
     } catch (err: any) {
       showToast('שגיאה בעדכון הפרופיל', 'error');
@@ -1286,6 +1341,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         loginWithApple,
         logout,
         updateProfile,
+        isAvatarUploadingInBackground,
         isEditProfileModalOpen,
         openEditProfileModal,
         closeEditProfileModal,

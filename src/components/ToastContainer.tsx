@@ -1,14 +1,22 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Info, X, Loader2 } from 'lucide-react';
 
 export const ToastContainer: React.FC = () => {
-  const { toasts, removeToast } = useApp();
+  const { toasts, removeToast, isAvatarUploadingInBackground } = useApp();
 
-  if (toasts.length === 0) return null;
+  if (toasts.length === 0 && !isAvatarUploadingInBackground) return null;
 
   return (
     <div className="fixed top-4 start-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none w-full max-w-sm px-4">
+      {/* Subtle indicator when avatar uploads in background while user browses */}
+      {isAvatarUploadingInBackground && (
+        <div className="pointer-events-auto flex items-center gap-2 py-1.5 px-3.5 rounded-full bg-slate-900/90 text-white shadow-xl border border-purple-400/30 backdrop-blur-md animate-in fade-in slide-in-from-top-2 duration-200">
+          <Loader2 className="w-3.5 h-3.5 text-purple-300 animate-spin" />
+          <span className="text-[11px] font-medium">מעלה תמונת פרופיל ברקע...</span>
+        </div>
+      )}
+
       {toasts.map((toast) => {
         const isSuccess = toast.type === 'success';
         const isError = toast.type === 'error';

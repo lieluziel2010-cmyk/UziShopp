@@ -147,26 +147,21 @@ export const EditProfileModal: React.FC = () => {
     setIsSaving(true);
     setErrorMsg('');
 
-    let finalAvatar = avatar;
-
-    // If an image upload is in progress in the background, await it so the saved profile includes the new picture!
-    if (uploadPromiseRef.current) {
-      try {
-        finalAvatar = await uploadPromiseRef.current;
-      } catch (err) {
-        console.warn('Image upload failed during submit, continuing with existing avatar:', err);
-      }
-    }
+    // Capture in-flight upload promise if image is currently uploading in background
+    const pendingPromise = uploadPromiseRef.current;
+    const finalAvatar = currentDisplayAvatar.trim();
 
     const res = await updateProfile({
       shopName: shopName.trim(),
       username: username.trim(),
       bio: bio.trim(),
-      avatar: finalAvatar.trim(),
+      avatar: finalAvatar,
+      pendingAvatarPromise: pendingPromise,
     });
     setIsSaving(false);
 
     if (res.success) {
+      // Close modal IMMEDIATELY so the user can continue browsing, scrolling, or uploading items!
       closeEditProfileModal();
     } else if (res.error) {
       setErrorMsg(res.error);
@@ -443,12 +438,12 @@ export const EditProfileModal: React.FC = () => {
               {isSaving ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>{isUploading ? 'שומר ומסיים העלאת תמונה...' : 'שומר שינויים...'}</span>
+                  <span>שומר שינויים...</span>
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>{isUploading ? 'שמור שינויים (התמונה תישמר)' : 'שמור שינויים'}</span>
+                  <span>שמור שינויים</span>
                 </>
               )}
             </button>
