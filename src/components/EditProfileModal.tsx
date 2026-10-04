@@ -27,6 +27,7 @@ export const EditProfileModal: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const objectUrlRef = useRef<string | null>(null);
+  const uploadPromiseRef = useRef<Promise<string> | null>(null);
 
   // Clean up any active object URL on unmount
   useEffect(() => {
@@ -44,6 +45,7 @@ export const EditProfileModal: React.FC = () => {
       setBio(currentUser.bio || '');
       setAvatar(currentUser.avatar || '');
     }
+    uploadPromiseRef.current = null;
     setPreview(null);
     setUploadError(null);
     setPendingFile(null);
@@ -53,7 +55,7 @@ export const EditProfileModal: React.FC = () => {
 
   if (!isEditProfileModalOpen || !currentUser) return null;
 
-  const processAndUploadFile = async (file: File) => {
+  const processAndUploadFile = (file: File) => {
     setPendingFile(file);
     setUploadError(null);
     setErrorMsg('');
@@ -69,30 +71,40 @@ export const EditProfileModal: React.FC = () => {
 
     setIsUploading(true);
 
-    try {
-      // 2. Resize and compress client-side before uploading (max 256x256, JPEG quality 0.8)
+    // 2. Start background compression & upload promise
+    const promise = (async () => {
+      // Resize and compress client-side before uploading (max 256x256, JPEG quality 0.8)
       const compressed = await compressProfileImage(file);
-
-      // 3. Upload to backend in background
+      // Upload to backend in background
       const uploadedUrl = await uploadImageFile(compressed.file, 'avatars');
+      return uploadedUrl;
+    })();
 
-      // 4. On success: keep the image as is (no flicker or reload)
-      setAvatar(uploadedUrl);
-      setShowSuccessState(true);
-      setTimeout(() => {
-        setShowSuccessState(false);
-      }, 3500);
-    } catch (err) {
-      console.error('Avatar upload failed:', err);
-      // 5. On failure: revert to the previous picture and show clear error message with retry option
-      setPreview(null);
-      setUploadError('ההעלאה נכשלה, נסה שוב');
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
+    uploadPromiseRef.current = promise;
+
+    promise
+      .then((uploadedUrl) => {
+        setAvatar(uploadedUrl);
+        setShowSuccessState(true);
+        setTimeout(() => {
+          setShowSuccessState(false);
+        }, 3500);
+      })
+      .catch((err) => {
+        console.error('Avatar upload failed:', err);
+        // On failure: revert to previous picture and show clear error message with retry option
+        setPreview(null);
+        setUploadError('ההעלאה נכשלה, נסה שוב');
+      })
+      .finally(() => {
+        setIsUploading(false);
+        if (uploadPromiseRef.current === promise) {
+          uploadPromiseRef.current = null;
+        }
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      });
   };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -112,11 +124,13 @@ export const EditProfileModal: React.FC = () => {
       URL.revokeObjectURL(objectUrlRef.current);
       objectUrlRef.current = null;
     }
+    uploadPromiseRef.current = null;
     setPreview(null);
     setAvatar('');
     setUploadError(null);
     setPendingFile(null);
     setShowSuccessState(false);
+    setIsUploading(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -132,11 +146,23 @@ export const EditProfileModal: React.FC = () => {
 
     setIsSaving(true);
     setErrorMsg('');
+
+    let finalAvatar = avatar;
+
+    // If an image upload is in progress in the background, await it so the saved profile includes the new picture!
+    if (uploadPromiseRef.current) {
+      try {
+        finalAvatar = await uploadPromiseRef.current;
+      } catch (err) {
+        console.warn('Image upload failed during submit, continuing with existing avatar:', err);
+      }
+    }
+
     const res = await updateProfile({
       shopName: shopName.trim(),
       username: username.trim(),
       bio: bio.trim(),
-      avatar: avatar.trim(),
+      avatar: finalAvatar.trim(),
     });
     setIsSaving(false);
 
@@ -411,11 +437,20 @@ export const EditProfileModal: React.FC = () => {
           <div className="pt-2 flex items-center gap-2">
             <button
               type="submit"
-              disabled={isSaving || isUploading}
-              className="flex-1 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-full text-xs shadow-md shadow-purple-600/20 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+              disabled={isSaving}
+              className="flex-1 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-full text-xs shadow-md shadow-purple-600/20 transition-all cursor-pointer disabled:opacity-60 flex items-center justify-center gap-1.5"
             >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>{isSaving ? 'שומר שינויים...' : 'שמור שינויים'}</span>
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>{isUploading ? 'שומר ומסיים העלאת תמונה...' : 'שומר שינויים...'}</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{isUploading ? 'שמור שינויים (התמונה תישמר)' : 'שמור שינויים'}</span>
+                </>
+              )}
             </button>
 
             <button

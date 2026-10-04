@@ -33,6 +33,7 @@ export const AuthModal: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const objectUrlRef = useRef<string | null>(null);
+  const uploadPromiseRef = useRef<Promise<string> | null>(null);
 
   useEffect(() => {
     return () => {
@@ -44,7 +45,7 @@ export const AuthModal: React.FC = () => {
 
   if (!isAuthModalOpen) return null;
 
-  const processAndUploadProfilePhoto = async (file: File) => {
+  const processAndUploadProfilePhoto = (file: File) => {
     setPendingFile(file);
     setPhotoUploadError(null);
     setErrorMsg('');
@@ -60,28 +61,37 @@ export const AuthModal: React.FC = () => {
 
     setIsUploadingPhoto(true);
 
-    try {
+    const promise = (async () => {
       // 2. Client-side resize and compression (max 256x256, JPEG quality 0.8)
       const compressed = await compressProfileImage(file);
 
       // 3. Upload to backend in background
       const downloadUrl = await uploadImageFile(compressed.file, 'avatars');
+      return downloadUrl;
+    })();
 
-      // 4. On success: keep the image as is (no flicker or reload)
-      setAvatarUrl(downloadUrl);
-      setShowSuccessBadge(true);
-      setTimeout(() => setShowSuccessBadge(false), 3500);
-    } catch (err) {
-      console.error('Registration photo upload error:', err);
-      // 5. On failure: revert to previous picture and show clear error message with retry option
-      setPreviewUrl(null);
-      setPhotoUploadError('ההעלאה נכשלה, נסה שוב');
-    } finally {
-      setIsUploadingPhoto(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
+    uploadPromiseRef.current = promise;
+
+    promise
+      .then((downloadUrl) => {
+        setAvatarUrl(downloadUrl);
+        setShowSuccessBadge(true);
+        setTimeout(() => setShowSuccessBadge(false), 3500);
+      })
+      .catch((err) => {
+        console.error('Registration photo upload error:', err);
+        setPreviewUrl(null);
+        setPhotoUploadError('ההעלאה נכשלה, נסה שוב');
+      })
+      .finally(() => {
+        setIsUploadingPhoto(false);
+        if (uploadPromiseRef.current === promise) {
+          uploadPromiseRef.current = null;
+        }
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      });
   };
 
   const handleProfilePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -101,11 +111,13 @@ export const AuthModal: React.FC = () => {
       URL.revokeObjectURL(objectUrlRef.current);
       objectUrlRef.current = null;
     }
+    uploadPromiseRef.current = null;
     setPreviewUrl(null);
     setAvatarUrl('');
     setPhotoUploadError(null);
     setPendingFile(null);
     setShowSuccessBadge(false);
+    setIsUploadingPhoto(false);
   };
 
   const handleGoogleLogin = async () => {
@@ -142,13 +154,22 @@ export const AuthModal: React.FC = () => {
           return;
         }
 
+        let finalAvatar = avatarUrl;
+        if (uploadPromiseRef.current) {
+          try {
+            finalAvatar = await uploadPromiseRef.current;
+          } catch (err) {
+            console.warn('Registration photo upload error during submit:', err);
+          }
+        }
+
         const res = await registerWithEmail(
           email.trim(),
           password.trim(),
           username.trim(),
           shopName.trim(),
           bio.trim(),
-          avatarUrl
+          finalAvatar
         );
         if (!res.success && res.error) {
           setErrorMsg(res.error);
