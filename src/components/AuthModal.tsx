@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { X, Sparkles, AlertCircle, LogIn, UserPlus, Upload, Loader2 } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { X, Sparkles, AlertCircle, LogIn, UserPlus, Upload, Loader2, RotateCcw, CheckCircle2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { uploadImageFile } from '../firebase';
 import { compressProfileImage } from '../utils/imageCompressor';
@@ -23,14 +23,66 @@ export const AuthModal: React.FC = () => {
   const [shopName, setShopName] = useState('');
   const [bio, setBio] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
-  const [photoUploadStatus, setPhotoUploadStatus] = useState<'idle' | 'compressing' | 'uploading'>('idle');
+  const [photoUploadError, setPhotoUploadError] = useState<string | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [showSuccessBadge, setShowSuccessBadge] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const objectUrlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+      }
+    };
+  }, []);
 
   if (!isAuthModalOpen) return null;
+
+  const processAndUploadProfilePhoto = async (file: File) => {
+    setPendingFile(file);
+    setPhotoUploadError(null);
+    setErrorMsg('');
+    setShowSuccessBadge(false);
+
+    // 1. URL.createObjectURL(file) for immediate preview without waiting
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+    }
+    const localPreview = URL.createObjectURL(file);
+    objectUrlRef.current = localPreview;
+    setPreviewUrl(localPreview);
+
+    setIsUploadingPhoto(true);
+
+    try {
+      // 2. Client-side resize and compression (max 256x256, JPEG quality 0.8)
+      const compressed = await compressProfileImage(file);
+
+      // 3. Upload to backend in background
+      const downloadUrl = await uploadImageFile(compressed.file, 'avatars');
+
+      // 4. On success: keep the image as is (no flicker or reload)
+      setAvatarUrl(downloadUrl);
+      setShowSuccessBadge(true);
+      setTimeout(() => setShowSuccessBadge(false), 3500);
+    } catch (err) {
+      console.error('Registration photo upload error:', err);
+      // 5. On failure: revert to previous picture and show clear error message with retry option
+      setPreviewUrl(null);
+      setPhotoUploadError('ההעלאה נכשלה, נסה שוב');
+    } finally {
+      setIsUploadingPhoto(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
 
   const handleProfilePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -41,29 +93,19 @@ export const AuthModal: React.FC = () => {
       return;
     }
 
-    setIsUploadingPhoto(true);
-    setPhotoUploadStatus('compressing');
-    setErrorMsg('');
+    processAndUploadProfilePhoto(file);
+  };
 
-    try {
-      // 1. Fast client-side resize and compression to 400x400 square
-      const compressed = await compressProfileImage(file);
-      setAvatarUrl(compressed.dataUrl);
-
-      // 2. Upload optimized file
-      setPhotoUploadStatus('uploading');
-      const downloadUrl = await uploadImageFile(compressed.file, 'avatars');
-      setAvatarUrl(downloadUrl);
-    } catch (err) {
-      console.error('Registration photo upload error:', err);
-      setErrorMsg('שגיאה בעיבוד או בהעלאת התמונה. נסה שוב.');
-    } finally {
-      setIsUploadingPhoto(false);
-      setPhotoUploadStatus('idle');
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+  const handleRemovePhoto = () => {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
     }
+    setPreviewUrl(null);
+    setAvatarUrl('');
+    setPhotoUploadError(null);
+    setPendingFile(null);
+    setShowSuccessBadge(false);
   };
 
   const handleGoogleLogin = async () => {
@@ -274,23 +316,25 @@ export const AuthModal: React.FC = () => {
 
                 <div className="flex items-center gap-3">
                   <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gradient-to-tr from-pink-200 via-purple-200 to-sky-200 border-2 border-purple-200 flex items-center justify-center shrink-0 shadow-xs">
-                    {avatarUrl ? (
+                    {(previewUrl || avatarUrl) ? (
                       <img 
-                        src={avatarUrl} 
+                        src={previewUrl || avatarUrl} 
                         alt="Avatar" 
-                        className={`w-full h-full object-cover transition-all ${
-                          isUploadingPhoto ? 'opacity-40 blur-[1px]' : ''
-                        }`} 
+                        style={{ opacity: isUploadingPhoto ? 0.6 : 1, transition: 'opacity .2s' }}
+                        className="w-full h-full object-cover" 
                       />
                     ) : (
-                      <span className={`text-purple-900 font-bold text-base ${isUploadingPhoto ? 'opacity-40' : ''}`}>
+                      <span 
+                        style={{ opacity: isUploadingPhoto ? 0.6 : 1, transition: 'opacity .2s' }}
+                        className="text-purple-900 font-bold text-base"
+                      >
                         {username ? username[0]?.toUpperCase() : 'U'}
                       </span>
                     )}
 
                     {isUploadingPhoto && (
-                      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center">
-                        <Loader2 className="w-4 h-4 text-purple-300 animate-spin" />
+                      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[1px] flex items-center justify-center pointer-events-none">
+                        <Loader2 className="w-4 h-4 text-white animate-spin" />
                       </div>
                     )}
                   </div>
@@ -306,16 +350,16 @@ export const AuthModal: React.FC = () => {
                         {isUploadingPhoto ? (
                           <>
                             <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-600" />
-                            <span>{photoUploadStatus === 'compressing' ? 'מקטין תמונה...' : 'מעלה תמונה...'}</span>
+                            <span>מעלה תמונה...</span>
                           </>
                         ) : (
-                          <span>{avatarUrl ? 'החלף תמונה' : 'בחר תמונה מהמכשיר'}</span>
+                          <span>{(previewUrl || avatarUrl) ? 'החלף תמונה' : 'בחר תמונה מהמכשיר'}</span>
                         )}
                       </button>
-                      {avatarUrl && !isUploadingPhoto && (
+                      {(previewUrl || avatarUrl) && !isUploadingPhoto && (
                         <button
                           type="button"
-                          onClick={() => setAvatarUrl('')}
+                          onClick={handleRemovePhoto}
                           className="py-1.5 px-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-full text-xs font-bold transition-colors border border-rose-200 cursor-pointer"
                           title="הסר תמונה"
                         >
@@ -323,13 +367,33 @@ export const AuthModal: React.FC = () => {
                         </button>
                       )}
                     </div>
-                    {isUploadingPhoto && (
-                      <p className="text-[10px] text-purple-700 font-semibold mt-1">
-                        מקטין אוטומטית לרזולוציה קלה למניעת השהיות...
-                      </p>
+                    {showSuccessBadge && !isUploadingPhoto && (
+                      <span className="text-[10px] text-emerald-700 font-bold inline-flex items-center gap-1 mt-1 animate-in fade-in">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                        <span>הועלתה בהצלחה! ✓</span>
+                      </span>
                     )}
                   </div>
                 </div>
+
+                {photoUploadError && (
+                  <div className="mt-2 p-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-[11px] flex items-center justify-between gap-2 animate-in fade-in">
+                    <div className="flex items-center gap-1 min-w-0">
+                      <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                      <span className="truncate">{photoUploadError}</span>
+                    </div>
+                    {pendingFile && (
+                      <button
+                        type="button"
+                        onClick={() => processAndUploadProfilePhoto(pendingFile)}
+                        className="px-2 py-0.5 bg-rose-600 hover:bg-rose-700 text-white rounded-full font-bold text-[10px] transition-colors cursor-pointer shrink-0 flex items-center gap-1 shadow-xs"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        <span>נסה שוב</span>
+                      </button>
+                    )}
+                  </div>
+                )}
 
                 {!avatarUrl && (
                   <p className="text-[10px] text-slate-500 mt-1.5">

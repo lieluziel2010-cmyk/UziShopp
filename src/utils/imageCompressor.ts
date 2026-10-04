@@ -150,14 +150,14 @@ export async function compressImage(
 
 /**
  * Specifically tuned compression for profile pictures/avatars:
- * 400x400 square center-cropped, 82% quality, reduced from ~10MB to ~30-50KB!
+ * Max 256x256 square center-cropped, 80% JPEG quality, as requested.
  */
 export async function compressProfileImage(file: File): Promise<CompressionResult> {
   return compressImage(file, {
-    maxWidth: 400,
-    maxHeight: 400,
+    maxWidth: 256,
+    maxHeight: 256,
     cropSquare: true,
-    quality: 0.82,
+    quality: 0.8,
     mimeType: 'image/jpeg',
   });
 }

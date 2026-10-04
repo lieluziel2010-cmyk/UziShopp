@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Sparkles, Upload, User, Trash2, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { X, Sparkles, Upload, User, Trash2, CheckCircle2, AlertCircle, Loader2, RotateCcw } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { uploadImageFile } from '../firebase';
 import { compressProfileImage } from '../utils/imageCompressor';
@@ -17,13 +17,25 @@ export const EditProfileModal: React.FC = () => {
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
   const [avatar, setAvatar] = useState('');
+  const [preview, setPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState<'idle' | 'compressing' | 'uploading' | 'done'>('idle');
-  const [compressionInfo, setCompressionInfo] = useState<{ reductionPercent: number; compressedSizeKb: number } | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [showSuccessState, setShowSuccessState] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const objectUrlRef = useRef<string | null>(null);
+
+  // Clean up any active object URL on unmount
+  useEffect(() => {
+    return () => {
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (currentUser) {
@@ -32,10 +44,56 @@ export const EditProfileModal: React.FC = () => {
       setBio(currentUser.bio || '');
       setAvatar(currentUser.avatar || '');
     }
+    setPreview(null);
+    setUploadError(null);
+    setPendingFile(null);
+    setShowSuccessState(false);
     setErrorMsg('');
   }, [currentUser, isEditProfileModalOpen]);
 
   if (!isEditProfileModalOpen || !currentUser) return null;
+
+  const processAndUploadFile = async (file: File) => {
+    setPendingFile(file);
+    setUploadError(null);
+    setErrorMsg('');
+    setShowSuccessState(false);
+
+    // 1. Display immediately as a local preview using URL.createObjectURL(file) without waiting
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+    }
+    const localPreviewUrl = URL.createObjectURL(file);
+    objectUrlRef.current = localPreviewUrl;
+    setPreview(localPreviewUrl);
+
+    setIsUploading(true);
+
+    try {
+      // 2. Resize and compress client-side before uploading (max 256x256, JPEG quality 0.8)
+      const compressed = await compressProfileImage(file);
+
+      // 3. Upload to backend in background
+      const uploadedUrl = await uploadImageFile(compressed.file, 'avatars');
+
+      // 4. On success: keep the image as is (no flicker or reload)
+      setAvatar(uploadedUrl);
+      setShowSuccessState(true);
+      setTimeout(() => {
+        setShowSuccessState(false);
+      }, 3500);
+    } catch (err) {
+      console.error('Avatar upload failed:', err);
+      // 5. On failure: revert to the previous picture and show clear error message with retry option
+      setPreview(null);
+      setUploadError('ההעלאה נכשלה, נסה שוב');
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -46,43 +104,19 @@ export const EditProfileModal: React.FC = () => {
       return;
     }
 
-    setIsUploading(true);
-    setUploadStatus('compressing');
-    setErrorMsg('');
-    setCompressionInfo(null);
-
-    try {
-      // 1. Client-side fast compression & square crop for avatar (~30-50KB)
-      const compressed = await compressProfileImage(file);
-
-      // Instant responsive preview to eliminate perceived lag
-      setAvatar(compressed.dataUrl);
-      setCompressionInfo({
-        reductionPercent: compressed.reductionPercent,
-        compressedSizeKb: compressed.compressedSizeKb,
-      });
-
-      // 2. Upload the compressed lightweight file
-      setUploadStatus('uploading');
-      const url = await uploadImageFile(compressed.file, 'avatars');
-      setAvatar(url);
-      setUploadStatus('done');
-    } catch (err) {
-      console.error('Avatar upload failed:', err);
-      setErrorMsg('שגיאה בעיבוד או בהעלאת התמונה');
-      setUploadStatus('idle');
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
+    processAndUploadFile(file);
   };
 
   const handleRemovePhoto = () => {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
+    setPreview(null);
     setAvatar('');
-    setCompressionInfo(null);
-    setUploadStatus('idle');
+    setUploadError(null);
+    setPendingFile(null);
+    setShowSuccessState(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -114,6 +148,7 @@ export const EditProfileModal: React.FC = () => {
   };
 
   const initialLetter = (username || currentUser.username || 'U')[0]?.toUpperCase();
+  const currentDisplayAvatar = preview || avatar;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex justify-center items-center p-4">
@@ -180,7 +215,7 @@ export const EditProfileModal: React.FC = () => {
                 type="button"
                 onClick={handleRemovePhoto}
                 className={`flex-1 py-1.5 px-3 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                  !avatar
+                  !currentDisplayAvatar
                     ? 'bg-purple-600 text-white shadow-xs'
                     : 'text-slate-600 hover:text-purple-600'
                 }`}
@@ -194,7 +229,7 @@ export const EditProfileModal: React.FC = () => {
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
                 className={`flex-1 py-1.5 px-3 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                  avatar
+                  currentDisplayAvatar
                     ? 'bg-purple-600 text-white shadow-xs'
                     : 'text-slate-600 hover:text-purple-600'
                 } disabled:opacity-75`}
@@ -202,12 +237,12 @@ export const EditProfileModal: React.FC = () => {
                 {isUploading ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>{uploadStatus === 'compressing' ? 'מקטין תמונה...' : 'מעלה תמונה...'}</span>
+                    <span>מעלה תמונה...</span>
                   </>
                 ) : (
                   <>
                     <Upload className="w-3.5 h-3.5" />
-                    <span>{avatar ? 'תמונה מהמכשיר ✓' : 'העלה מהמכשיר'}</span>
+                    <span>{currentDisplayAvatar ? 'תמונה מהמכשיר ✓' : 'העלה מהמכשיר'}</span>
                   </>
                 )}
               </button>
@@ -220,27 +255,26 @@ export const EditProfileModal: React.FC = () => {
                 onClick={() => !isUploading && fileInputRef.current?.click()}
                 title="לחץ להעלאת תמונה מהמכשיר"
               >
-                {avatar ? (
+                {currentDisplayAvatar ? (
                   <img
-                    src={avatar}
+                    src={currentDisplayAvatar}
                     alt={username}
-                    className={`w-16 h-16 rounded-full object-cover border-2 border-purple-300 shadow-md transition-all ${
-                      isUploading ? 'opacity-40 blur-[1px]' : 'group-hover:opacity-85'
-                    }`}
+                    style={{ opacity: isUploading ? 0.6 : 1, transition: 'opacity .2s' }}
+                    className="w-16 h-16 rounded-full object-cover border-2 border-purple-300 shadow-md group-hover:opacity-85"
                   />
                 ) : (
-                  <div className={`w-16 h-16 rounded-full bg-gradient-to-tr from-pink-200 via-purple-200 to-sky-200 flex items-center justify-center font-bold text-purple-900 text-xl border-2 border-purple-200 shadow-sm transition-all ${
-                    isUploading ? 'opacity-40' : ''
-                  }`}>
+                  <div 
+                    style={{ opacity: isUploading ? 0.6 : 1, transition: 'opacity .2s' }}
+                    className="w-16 h-16 rounded-full bg-gradient-to-tr from-pink-200 via-purple-200 to-sky-200 flex items-center justify-center font-bold text-purple-900 text-xl border-2 border-purple-200 shadow-sm"
+                  >
                     {initialLetter}
                   </div>
                 )}
 
-                {/* Animated loading overlay */}
+                {/* Subtle loading indicator on the avatar: small spinner overlay */}
                 {isUploading ? (
-                  <div className="absolute inset-0 rounded-full bg-slate-900/60 backdrop-blur-xs flex flex-col items-center justify-center text-white animate-in fade-in duration-150">
-                    <Loader2 className="w-5 h-5 text-purple-300 animate-spin" />
-                    <span className="text-[8px] font-bold text-white mt-0.5">מעבד...</span>
+                  <div className="absolute inset-0 rounded-full bg-slate-900/40 backdrop-blur-[1px] flex items-center justify-center pointer-events-none transition-opacity">
+                    <Loader2 className="w-5 h-5 text-white animate-spin" />
                   </div>
                 ) : (
                   <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
@@ -254,21 +288,22 @@ export const EditProfileModal: React.FC = () => {
                   <div className="space-y-1 animate-in fade-in duration-150">
                     <div className="flex items-center gap-1.5 text-xs font-bold text-purple-700">
                       <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0 text-purple-600" />
-                      <span>{uploadStatus === 'compressing' ? 'מקטין וממטב תמונה לפרופיל...' : 'מעלה תמונת פרופיל מהירה...'}</span>
+                      <span>מעלה תמונת פרופיל ברקע...</span>
                     </div>
                     <p className="text-[10px] text-slate-500 leading-tight">
-                      התמונה מכווצת אוטומטית למשקל קל ולגודל אידיאלי למניעת השהיות
+                      התמונה כווצה אוטומטית (256x256) ומוצגת מיד
                     </p>
                   </div>
-                ) : avatar ? (
+                ) : currentDisplayAvatar ? (
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-1.5">
                       <p className="text-xs font-bold text-slate-800">
                         תמונה אישית נבחרה
                       </p>
-                      {compressionInfo && (
-                        <span className="text-[9px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded-md font-semibold">
-                          הוקטנה ב-{compressionInfo.reductionPercent}% ✓
+                      {showSuccessState && (
+                        <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-bold inline-flex items-center gap-1 animate-in fade-in zoom-in-95">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                          <span>הועלתה בהצלחה! ✓</span>
                         </span>
                       )}
                     </div>
@@ -303,6 +338,26 @@ export const EditProfileModal: React.FC = () => {
                 )}
               </div>
             </div>
+
+            {/* Error Message with Retry option */}
+            {uploadError && (
+              <div className="p-2.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center justify-between gap-2 animate-in fade-in">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span className="truncate">{uploadError}</span>
+                </div>
+                {pendingFile && (
+                  <button
+                    type="button"
+                    onClick={() => processAndUploadFile(pendingFile)}
+                    className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-full font-bold text-[11px] transition-colors cursor-pointer shrink-0 flex items-center gap-1 shadow-xs"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>נסה שוב</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Shop Name */}
