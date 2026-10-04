@@ -30,6 +30,7 @@ import {
   uploadBytes, 
   getDownloadURL 
 } from 'firebase/storage';
+import { compressProfileImage, compressProductImage } from './utils/imageCompressor';
 
 // Firebase configuration placeholder with environment variable overrides
 export const firebaseConfig = {
@@ -59,14 +60,32 @@ appleProvider.addScope('email');
 appleProvider.addScope('name');
 
 /**
- * Uploads an image file to Firebase Storage with resilient data URL fallback.
+ * Uploads an image file to Firebase Storage with automatic pre-compression
+ * and resilient data URL fallback.
  */
 export async function uploadImageFile(file: File, folderPath: string = 'items'): Promise<string> {
+  let fileToUpload = file;
+  
+  // Auto-compress large images if not already compressed
+  try {
+    if (file.type.startsWith('image/')) {
+      if (folderPath === 'avatars') {
+        const res = await compressProfileImage(file);
+        fileToUpload = res.file;
+      } else if (file.size > 200 * 1024) {
+        const res = await compressProductImage(file);
+        fileToUpload = res.file;
+      }
+    }
+  } catch (compErr) {
+    console.warn('Pre-upload compression fallback notice:', compErr);
+  }
+
   try {
     const timestamp = Date.now();
-    const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const cleanFileName = fileToUpload.name.replace(/[^a-zA-Z0-9.-]/g, '_');
     const storageRef = ref(storage, `${folderPath}/${timestamp}_${cleanFileName}`);
-    const snapshot = await uploadBytes(storageRef, file);
+    const snapshot = await uploadBytes(storageRef, fileToUpload);
     const downloadUrl = await getDownloadURL(snapshot.ref);
     return downloadUrl;
   } catch (err) {
@@ -75,7 +94,7 @@ export async function uploadImageFile(file: File, folderPath: string = 'items'):
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
       reader.onerror = (e) => reject(e);
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(fileToUpload);
     });
   }
 }

@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { X, Sparkles, AlertCircle, LogIn, UserPlus, Upload } from 'lucide-react';
+import { X, Sparkles, AlertCircle, LogIn, UserPlus, Upload, Loader2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { uploadImageFile } from '../firebase';
+import { compressProfileImage } from '../utils/imageCompressor';
 
 export const AuthModal: React.FC = () => {
   const { 
@@ -23,6 +24,7 @@ export const AuthModal: React.FC = () => {
   const [bio, setBio] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [photoUploadStatus, setPhotoUploadStatus] = useState<'idle' | 'compressing' | 'uploading'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -40,14 +42,27 @@ export const AuthModal: React.FC = () => {
     }
 
     setIsUploadingPhoto(true);
+    setPhotoUploadStatus('compressing');
     setErrorMsg('');
+
     try {
-      const downloadUrl = await uploadImageFile(file, 'avatars');
+      // 1. Fast client-side resize and compression to 400x400 square
+      const compressed = await compressProfileImage(file);
+      setAvatarUrl(compressed.dataUrl);
+
+      // 2. Upload optimized file
+      setPhotoUploadStatus('uploading');
+      const downloadUrl = await uploadImageFile(compressed.file, 'avatars');
       setAvatarUrl(downloadUrl);
     } catch (err) {
-      setErrorMsg('שגיאה בהעלאת התמונה. נסה שוב.');
+      console.error('Registration photo upload error:', err);
+      setErrorMsg('שגיאה בעיבוד או בהעלאת התמונה. נסה שוב.');
     } finally {
       setIsUploadingPhoto(false);
+      setPhotoUploadStatus('idle');
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -258,33 +273,60 @@ export const AuthModal: React.FC = () => {
                 />
 
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-tr from-pink-200 via-purple-200 to-sky-200 border-2 border-purple-200 flex items-center justify-center shrink-0 shadow-xs">
+                  <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gradient-to-tr from-pink-200 via-purple-200 to-sky-200 border-2 border-purple-200 flex items-center justify-center shrink-0 shadow-xs">
                     {avatarUrl ? (
-                      <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                      <img 
+                        src={avatarUrl} 
+                        alt="Avatar" 
+                        className={`w-full h-full object-cover transition-all ${
+                          isUploadingPhoto ? 'opacity-40 blur-[1px]' : ''
+                        }`} 
+                      />
                     ) : (
-                      <span className="text-purple-900 font-bold text-base">
+                      <span className={`text-purple-900 font-bold text-base ${isUploadingPhoto ? 'opacity-40' : ''}`}>
                         {username ? username[0]?.toUpperCase() : 'U'}
                       </span>
                     )}
+
+                    {isUploadingPhoto && (
+                      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center">
+                        <Loader2 className="w-4 h-4 text-purple-300 animate-spin" />
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isUploadingPhoto}
-                      className="py-1.5 px-3 bg-white hover:bg-purple-50 text-purple-700 rounded-full text-xs font-bold transition-colors border border-purple-200 cursor-pointer disabled:opacity-50 shadow-2xs"
-                    >
-                      {isUploadingPhoto ? 'מעלה תמונה...' : avatarUrl ? 'החלף תמונה' : 'בחר תמונה מהמכשיר'}
-                    </button>
-                    {avatarUrl && (
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => setAvatarUrl('')}
-                        className="py-1.5 px-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-full text-xs font-bold transition-colors border border-rose-200 cursor-pointer"
-                        title="הסר תמונה"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploadingPhoto}
+                        className="py-1.5 px-3 bg-white hover:bg-purple-50 text-purple-700 rounded-full text-xs font-bold transition-colors border border-purple-200 cursor-pointer disabled:opacity-75 shadow-2xs flex items-center gap-1.5"
                       >
-                        הסר (היה ללא תמונה)
+                        {isUploadingPhoto ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-600" />
+                            <span>{photoUploadStatus === 'compressing' ? 'מקטין תמונה...' : 'מעלה תמונה...'}</span>
+                          </>
+                        ) : (
+                          <span>{avatarUrl ? 'החלף תמונה' : 'בחר תמונה מהמכשיר'}</span>
+                        )}
                       </button>
+                      {avatarUrl && !isUploadingPhoto && (
+                        <button
+                          type="button"
+                          onClick={() => setAvatarUrl('')}
+                          className="py-1.5 px-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-full text-xs font-bold transition-colors border border-rose-200 cursor-pointer"
+                          title="הסר תמונה"
+                        >
+                          הסר
+                        </button>
+                      )}
+                    </div>
+                    {isUploadingPhoto && (
+                      <p className="text-[10px] text-purple-700 font-semibold mt-1">
+                        מקטין אוטומטית לרזולוציה קלה למניעת השהיות...
+                      </p>
                     )}
                   </div>
                 </div>

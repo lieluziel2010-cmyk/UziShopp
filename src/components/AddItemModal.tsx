@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Sparkles, Upload, AlertCircle, ShieldCheck } from 'lucide-react';
+import { X, Sparkles, Upload, AlertCircle, ShieldCheck, Loader2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { Category, ItemCondition } from '../types';
 import { CATEGORIES, CONDITIONS } from '../data/initialData';
 import { uploadImageFile } from '../firebase';
+import { compressProductImage } from '../utils/imageCompressor';
 
 export const AddItemModal: React.FC = () => {
   const { 
@@ -72,12 +73,18 @@ export const AddItemModal: React.FC = () => {
     setIsUploading(true);
     setErrorMsg('');
     try {
-      const downloadUrl = await uploadImageFile(file, 'items');
+      const compressed = await compressProductImage(file);
+      setImageUrl(compressed.dataUrl);
+      const downloadUrl = await uploadImageFile(compressed.file, 'items');
       setImageUrl(downloadUrl);
     } catch (err) {
+      console.error('Item photo upload error:', err);
       setErrorMsg('שגיאה בהעלאת התמונה. נסה שוב.');
     } finally {
       setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -232,6 +239,13 @@ export const AddItemModal: React.FC = () => {
                         JPG, PNG או WebP עד 10MB
                       </p>
                     </div>
+                  </div>
+                )}
+
+                {isUploading && (
+                  <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs flex flex-col items-center justify-center text-white z-20 space-y-2 animate-in fade-in duration-150">
+                    <Loader2 className="w-8 h-8 text-purple-300 animate-spin" />
+                    <span className="text-xs font-bold text-white">מקטין ומעלה תמונה במהירות...</span>
                   </div>
                 )}
               </div>

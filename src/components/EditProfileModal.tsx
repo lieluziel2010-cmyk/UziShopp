@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Sparkles, Upload, User, Trash2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { X, Sparkles, Upload, User, Trash2, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { uploadImageFile } from '../firebase';
+import { compressProfileImage } from '../utils/imageCompressor';
 
 export const EditProfileModal: React.FC = () => {
   const { 
@@ -17,6 +18,8 @@ export const EditProfileModal: React.FC = () => {
   const [bio, setBio] = useState('');
   const [avatar, setAvatar] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<'idle' | 'compressing' | 'uploading' | 'done'>('idle');
+  const [compressionInfo, setCompressionInfo] = useState<{ reductionPercent: number; compressedSizeKb: number } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -44,19 +47,42 @@ export const EditProfileModal: React.FC = () => {
     }
 
     setIsUploading(true);
+    setUploadStatus('compressing');
     setErrorMsg('');
+    setCompressionInfo(null);
+
     try {
-      const url = await uploadImageFile(file, 'avatars');
+      // 1. Client-side fast compression & square crop for avatar (~30-50KB)
+      const compressed = await compressProfileImage(file);
+
+      // Instant responsive preview to eliminate perceived lag
+      setAvatar(compressed.dataUrl);
+      setCompressionInfo({
+        reductionPercent: compressed.reductionPercent,
+        compressedSizeKb: compressed.compressedSizeKb,
+      });
+
+      // 2. Upload the compressed lightweight file
+      setUploadStatus('uploading');
+      const url = await uploadImageFile(compressed.file, 'avatars');
       setAvatar(url);
-    } catch {
-      setErrorMsg('שגיאה בהעלאת התמונה');
+      setUploadStatus('done');
+    } catch (err) {
+      console.error('Avatar upload failed:', err);
+      setErrorMsg('שגיאה בעיבוד או בהעלאת התמונה');
+      setUploadStatus('idle');
     } finally {
       setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
   const handleRemovePhoto = () => {
     setAvatar('');
+    setCompressionInfo(null);
+    setUploadStatus('idle');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -171,43 +197,81 @@ export const EditProfileModal: React.FC = () => {
                   avatar
                     ? 'bg-purple-600 text-white shadow-xs'
                     : 'text-slate-600 hover:text-purple-600'
-                }`}
+                } disabled:opacity-75`}
               >
-                <Upload className="w-3.5 h-3.5" />
-                <span>{isUploading ? 'מעלה...' : avatar ? 'תמונה מהמכשיר ✓' : 'העלה מהמכשיר'}</span>
+                {isUploading ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>{uploadStatus === 'compressing' ? 'מקטין תמונה...' : 'מעלה תמונה...'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>{avatar ? 'תמונה מהמכשיר ✓' : 'העלה מהמכשיר'}</span>
+                  </>
+                )}
               </button>
             </div>
 
-            {/* Visual Preview */}
+            {/* Visual Preview & Loading State */}
             <div className="flex items-center gap-3.5 pt-1">
               <div 
                 className="relative group cursor-pointer shrink-0" 
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => !isUploading && fileInputRef.current?.click()}
                 title="לחץ להעלאת תמונה מהמכשיר"
               >
                 {avatar ? (
                   <img
                     src={avatar}
                     alt={username}
-                    className="w-16 h-16 rounded-full object-cover border-2 border-purple-300 shadow-md group-hover:opacity-85 transition-opacity"
+                    className={`w-16 h-16 rounded-full object-cover border-2 border-purple-300 shadow-md transition-all ${
+                      isUploading ? 'opacity-40 blur-[1px]' : 'group-hover:opacity-85'
+                    }`}
                   />
                 ) : (
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-pink-200 via-purple-200 to-sky-200 flex items-center justify-center font-bold text-purple-900 text-xl border-2 border-purple-200 shadow-sm">
+                  <div className={`w-16 h-16 rounded-full bg-gradient-to-tr from-pink-200 via-purple-200 to-sky-200 flex items-center justify-center font-bold text-purple-900 text-xl border-2 border-purple-200 shadow-sm transition-all ${
+                    isUploading ? 'opacity-40' : ''
+                  }`}>
                     {initialLetter}
                   </div>
                 )}
 
-                <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
-                  <Upload className="w-4 h-4" />
-                </div>
+                {/* Animated loading overlay */}
+                {isUploading ? (
+                  <div className="absolute inset-0 rounded-full bg-slate-900/60 backdrop-blur-xs flex flex-col items-center justify-center text-white animate-in fade-in duration-150">
+                    <Loader2 className="w-5 h-5 text-purple-300 animate-spin" />
+                    <span className="text-[8px] font-bold text-white mt-0.5">מעבד...</span>
+                  </div>
+                ) : (
+                  <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                    <Upload className="w-4 h-4" />
+                  </div>
+                )}
               </div>
 
               <div className="text-start flex-1 min-w-0">
-                {avatar ? (
-                  <div className="space-y-1.5">
-                    <p className="text-xs font-bold text-slate-800">
-                      תמונה אישית נבחרה
+                {isUploading ? (
+                  <div className="space-y-1 animate-in fade-in duration-150">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-purple-700">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0 text-purple-600" />
+                      <span>{uploadStatus === 'compressing' ? 'מקטין וממטב תמונה לפרופיל...' : 'מעלה תמונת פרופיל מהירה...'}</span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 leading-tight">
+                      התמונה מכווצת אוטומטית למשקל קל ולגודל אידיאלי למניעת השהיות
                     </p>
+                  </div>
+                ) : avatar ? (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-xs font-bold text-slate-800">
+                        תמונה אישית נבחרה
+                      </p>
+                      {compressionInfo && (
+                        <span className="text-[9px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded-md font-semibold">
+                          הוקטנה ב-{compressionInfo.reductionPercent}% ✓
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
